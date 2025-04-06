@@ -54,6 +54,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<IMeetingService, MeetingService>();
+builder.Services.AddScoped<NotificationService>();
+
 builder.Services.AddAutoMapper(typeof(Program));
 
  //添加跨域策略
