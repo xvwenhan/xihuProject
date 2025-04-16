@@ -87,7 +87,49 @@
   </div>
 </template>
 
+<script setup>
+import Navbar from '@/components/Navbar.vue'
+import Header from '@/components/Header.vue'
+import { ElContainer, ElMessage } from 'element-plus'
+import 'element-plus/es/components/menu/style/css'
+import 'element-plus/es/components/menu-item/style/css'
+import loading from '@/components/LoadComponent.vue'
 
+
+import { ref, computed, onMounted } from "vue";
+import api from '../../api/index.js';
+
+
+const meetings = ref([]); // 存储会议列表
+const selectedMeeting = ref(null); // 选中的会议
+const dialogVisible = ref(false); // 控制弹窗显示
+const isLoading = ref(true); // 控制加载状态
+// 按日期分组并排序
+const groupedMeetings = computed(() => {
+  const groups = {};
+  meetings.value.forEach((meeting) => {
+    if (!groups[meeting.date]) {
+      groups[meeting.date] = [];
+    }
+    groups[meeting.date].push(meeting);
+  });
+
+  // 按时间排序
+  for (const date in groups) {
+    groups[date].sort((a, b) => a.time.localeCompare(b.time));
+  }
+  return groups;
+});
+
+
+
+// 组件加载时获取数据
+onMounted(() => {
+  isLoading.value = true;
+  fetchSubscribedMeetings();
+});
+
+</script>
 <style scoped>
 /* 页面整体布局 */
 
