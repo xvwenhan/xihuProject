@@ -8,7 +8,9 @@
       <!-- 主要内容与右侧区域 -->
       <el-container class="content-container">
 
-    
+
+
+
         <div class="main-content" v-if="!isLoading">
           <h2 class="section-title">订阅列表</h2>
 
@@ -20,7 +22,36 @@
                 <span class="date-text">{{ date }}</span>
                 <div class="date-line"></div>
               </div>
+              <!-- 会议卡片 -->
+              <div class="meeting-list">
+                <div v-for="meeting in meetings" :key="meeting.id" class="meeting-card">
+                  <p class="meeting-name">{{ meeting.name.length > 20 ? meeting.name.substring(0, 20) + '...' :
+                    meeting.name }}</p>
+                  <!-- <p class="meeting-name">{{ meeting.name }}</p> -->
+                  <p class="meeting-time">时间: {{ meeting.time }}</p>
 
+                  <!-- <p class="meeting-type">类型: {{ meeting.type }}</p> -->
+                  <p class="meeting-location">地点: {{ meeting.location }}</p>
+                  <!-- <p class="meeting-subscribers">订阅人数: {{ meeting.subscribeNum }}</p> -->
+                  <p class="meeting-mode">
+                    <!-- 方式: {{ meeting.isOnlyOffline ? "线下" : "线上 & 线下" }} -->
+                  </p>
+
+                  <!-- 按钮容器 -->
+                  <div class="button-group">
+                    <!-- 订阅状态按钮（查看信息 / 观看回放） -->
+                    <button class="meeting-btn" :class="{ 'subscribed': isMeetingExpired(meeting.date, meeting.time) }"
+                      @click="openMeetingDialog(meeting)">
+                      {{ isMeetingExpired(meeting.date, meeting.time) ? "观看回放" : "查看信息" }}
+                    </button>
+
+                    <!-- 取消订阅按钮 -->
+                    <button class="meeting-btn cancel-btn" @click="cancelSubscription(meeting.id)">
+                      取消订阅
+                    </button>
+                  </div>
+                </div>
+              </div>
 
             </div>
           </div>
