@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>微信登录测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #qrcode {
+            margin: 20px;
+            width: 300px;
+            height: 300px;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 80%;
+            word-break: break-all;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .user-info {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            display: none;
+        }
+        .user-info table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .user-info td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        .user-info td:first-child {
+            font-weight: bold;
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <h1>微信登录测试</h1>
+    <canvas id="qrcode"></canvas>
+    <div id="status" class="status"></div>
+    <div id="userInfo" class="user-info">
+        <h2>用户信息</h2>
+        <table>
+            <tr><td>用户ID：</td><td id="userId"></td></tr>
+            <tr><td>用户名：</td><td id="username"></td></tr>
+            <tr><td>邮箱：</td><td id="email"></td></tr>
+            <tr><td>角色：</td><td id="role"></td></tr>
+            <tr><td>登录类型：</td><td id="loginType"></td></tr>
+        </table>
+        <div style="margin-top: 10px;">
+            <strong>Token:</strong>
+            <div id="token" style="word-break: break-all; margin-top: 5px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let loginCheckInterval;
+        let currentState = '';
+        let stateCheckInterval;
+
+        function getLoginQRCode() {
+            fetch('https://62472329.r3.cpolar.top/api/wechatauth/login-url')
+                .then(response => response.json())
+                .then(data => {
+                    // 生成二维码
+                    QRCode.toCanvas(document.getElementById('qrcode'), data.url, {
+                        width: 300,
+                        height: 300,
+                        margin: 1
+                    }, function (error) {
+                        if (error) {
+                            document.getElementById('status').innerHTML = '生成二维码失败: ' + error;
+                            document.getElementById('status').className = 'status error';
+                        } else {
+                            document.getElementById('status').innerHTML = '二维码生成成功，请使用微信扫描';
+                            document.getElementById('status').className = 'status success';
+                            
+                            // 从URL中提取state参数
+                            const urlObj = new URL(data.url);
+                            currentState = urlObj.searchParams.get('state');
+                            
+                            // 开始轮询检查登录状态
+                            if (currentState) {
+                                startPolling();
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    document.getElementById('status').innerHTML = '获取登录URL失败: ' + error;
+                    document.getElementById('status').className = 'status error';
+                });
+        }
+
+        function startPolling() {
+            // 清除可能存在的之前的轮询
+            if (stateCheckInterval) {
+                clearInterval(stateCheckInterval);
+            }
+
+            // 每3秒检查一次登录状态
+            stateCheckInterval = setInterval(() => {
+                checkLoginState();
+            }, 3000);
+
+            // 60秒后停止轮询
+            setTimeout(() => {
+                if (stateCheckInterval) {
+                    clearInterval(stateCheckInterval);
+                    document.getElementById('status').innerHTML = '二维码已过期，请刷新页面重试';
+                    document.getElementById('status').className = 'status error';
+                }
+            }, 60000);
+        }
+
+        function checkLoginState() {
+            fetch(`https://62472329.r3.cpolar.top/api/wechatauth/check-state?state=${currentState}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.isLoggedIn && data.data) {
+                        // 登录成功，显示用户信息
+                        clearInterval(stateCheckInterval);
+                        displayUserInfo(data.data);
+                    }
+                })
+                .catch(error => {
+                    console.error('检查登录状态失败:', error);
+                });
+        }
+
+        function displayUserInfo(data) {
+            document.getElementById('status').innerHTML = '登录成功！';
+            document.getElementById('status').className = 'status success';
+            
+            // 显示用户信息
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('userId').textContent = data.user.Id;
+            document.getElementById('username').textContent = data.user.Username;
+            document.getElementById('email').textContent = data.user.Email;
+            document.getElementById('role').textContent = data.user.Role;
+            document.getElementById('loginType').textContent = data.user.LoginType;
+            document.getElementById('token').textContent = data.token;
+
+            // 可以在这里将token保存到localStorage
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('userInfo', JSON.stringify(data.user));
+
+            // 清除二维码
+            const qrCanvas = document.getElementById('qrcode');
+            const ctx = qrCanvas.getContext('2d');
+            ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+        }
+
+        // 启动登录流程
+        getLoginQRCode();
+    </script>
+</body>
+</html> 

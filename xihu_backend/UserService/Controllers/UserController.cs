@@ -67,5 +67,28 @@ namespace UserService.Controllers
            var response = await _authService.VerifyCodeAsync(request);
            return response.Success ? Ok(response) : BadRequest(response);
        }
+
+
+        /// <summary>
+        /// 获取用户信息
+        /// </summary>
+        [HttpGet("private/getUserInfo")]
+        public async Task<IActionResult> GetUserInfo()
+        {
+            var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+            var role = Request.Headers["X-User-Role"].FirstOrDefault();
+            var response = await _notificationService.GetUserInfo(userId);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+        /// <summary>
+        /// 设置用户信息
+        /// </summary>
+        [HttpPost("private/setUserInfo")]
+        public async Task<IActionResult> SetUserInfo([FromBody] SetUserProfile request)
+        {
+            var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+            var response = await _notificationService.SetUserInfo(request, userId);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
     }
 }
