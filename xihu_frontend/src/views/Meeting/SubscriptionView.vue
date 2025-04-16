@@ -121,7 +121,42 @@ const groupedMeetings = computed(() => {
   return groups;
 });
 
+// 获取用户订阅的会议
+const fetchSubscribedMeetings = async () => {
+  try {
+    const response = await api.get("/user/private/subscribe");
+    meetings.value = response.data.data;
+    isLoading.value = false;
+  } catch (error) {
+    console.error("获取订阅会议失败:", error);
+    ElMessage.info("订阅列表为空");
+    isLoading.value = false;
+  }
+};
 
+// 判断会议是否已过期
+const isMeetingExpired = (date, time) => {
+  const meetingDateTime = new Date(`${date} ${time}`);
+  return meetingDateTime < new Date();
+};
+
+// 点击 "查看信息 / 观看回放"打开会议详情弹窗
+const openMeetingDialog = (meeting) => {
+  selectedMeeting.value = meeting;
+  dialogVisible.value = true;
+};
+
+// 取消订阅
+const cancelSubscription = async (meetingId) => {
+  try {
+    await api.post("/user/private/subscribe", { conferenceId: meetingId });
+    ElMessage.success("取消订阅成功");
+    fetchSubscribedMeetings(); // 重新获取数据
+  } catch (error) {
+    console.error("取消订阅失败:", error);
+    ElMessage.error("取消订阅失败");
+  }
+};
 
 // 组件加载时获取数据
 onMounted(() => {
