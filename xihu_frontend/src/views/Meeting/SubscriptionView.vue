@@ -1,3 +1,4 @@
+
 <template>
   <div class="home">
     <Header @toggleNotifications="toggleNotifications" />
@@ -7,7 +8,7 @@
 
      <!-- 主要内容与右侧区域 -->
      <el-container class="content-container">
-             会议议程
+      订阅
      </el-container>
    </div>
  </div>
