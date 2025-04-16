@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <Header />
+    <Header @toggleNotifications="toggleNotifications" />
    <div class="layout-container">
      <!-- 左侧导航栏 -->
      <Navbar class="sidebar" />
@@ -8,15 +8,25 @@
      <!-- 主要内容与右侧区域 -->
      <el-container class="content-container">
           <div class="sort">
-            <div class="sort-item" >按时间排序</div>
+            <div class="sort-item" @click="sortByTime">按时间排序</div>
             <div>|</div>
-            <div class="sort-item" >按热度排序</div>
+            <div class="sort-item" @click="sortByHot">按热度排序</div>
           </div>
           <div class="agendalist">
-            <div class="agenda-item">
-
+            <div class="agenda-item" v-for="meeting in meetings" :key="i">
+              <div class="info-container">         
+                <div class="time">{{ meeting.time }}</div>
+                <div style="display: flex;flex-direction: row;">
+                  <div style="font-size: 20px;">{{ meeting.name }}</div>
+                  <div style="display: flex;flex-direction: row;padding:5px;">30/
+                    <div style="color: #999;text-decoration: underline;">{{ meeting.offlineNum }}</div>
+                  </div>
+                </div>
+                <div style="font-size: 13px;color: #999;">类型:{{ meeting.type }}</div>
+                <div style="font-size: 13px;color: #999;">地点:{{ meeting.location }}</div>
+              </div>
               <div class="button-container">
-                <button class="button" >订阅</button>
+                <button class="button" @click="subscribeMeeting(meeting.id)">订阅</button>
                 <button class="button">跳转</button>
               </div>
             </div>
@@ -27,7 +37,7 @@
 </template>
 
   
-<!-- <script setup>
+<script setup>
   import Navbar from '@/components/Navbar.vue'
   import Header from '@/components/Header2.vue'
   import { ElContainer,ElMessage} from 'element-plus'
@@ -81,9 +91,7 @@
     }
   }
 </script>
-   -->
-
-
+  
 <style scoped>
 .home {
   display: flex;
