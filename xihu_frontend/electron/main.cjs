@@ -1,3 +1,4 @@
+@ -0,0 +1,53 @@
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
@@ -8,9 +9,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      webSecurity: false,
+      webSecurity: true
     }
-
   })
 
   // 设置 CSP 头
@@ -19,27 +19,13 @@ function createWindow() {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* https://api.dicebear.com https://ditu.amap.com;",
-          "img-src 'self' data: http://localhost:* https://api.dicebear.com https://ditu.amap.com/;",
-          "connect-src 'self' http://localhost:* https://api.dicebear.com https://ditu.amap.com/;"
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*;",
+          "img-src 'self' data: http://localhost:*;",
+          "connect-src 'self' http://localhost:*;"
         ]
       }
     })
   })
-  // win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-  //   callback({
-  //     responseHeaders: {
-  //       ...details.responseHeaders,
-  //       'Content-Security-Policy': [
-  //         "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* https://api.dicebear.com;",
-  //         "img-src 'self' data: http://localhost:* https://api.dicebear.com;",
-  //         "connect-src 'self' http://localhost:* https://api.dicebear.com ",
-  //         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.staticfile.net;",  // 允许加载外部脚本
-  //         "script-src-elem 'self' 'unsafe-inline' https://cdn.staticfile.net;" // 允许通过 script 元素加载外部脚本
-  //       ]
-  //     }
-  //   })
-  // })
 
   // 在开发环境中加载 Vite 开发服务器
   if (process.env.NODE_ENV === 'development') {

@@ -1,19 +1,29 @@
+@ -0,0 +1,108 @@
 <!-- components/Header.vue -->
 <template>
-  <el-header height="50px" class="common-header">
+  <el-header height="60px" class="common-header">
     <div class="header-content">
       <!-- 左侧 logo 区域 -->
       <div class="logo-container">
-        <img :src="logoSrc" :alt="logoAlt" class="logo-image">
+        <img
+          :src="logoSrc"
+          :alt="logoAlt"
+          class="logo-image"
+        >
       </div>
 
-      <!-- 右侧内容区域 -->
+        <!-- 右侧内容区域 -->
       <div class="right-content">
-        <!-- 动态显示图标 -->
-        <div class="icons-container" v-if="$route.path == '/home'">
-          <img v-for="icon in headerIcons" :key="icon.name"
-            :src="icon.isActive ? convertIconPath(icon.activePath) : convertIconPath(icon.path)" :alt="icon.name"
-            class="header-icon" @click="toggleIcon(icon)">
+        <!-- 三个图标 -->
+        <div class="icons-container">
+          <img
+            v-for="icon in headerIcons"
+            :key="icon.name"
+            :src="icon.path"
+            :alt="icon.name"
+            class="header-icon"
+            @click="icon.onClick"
+          >
         </div>
         <slot name="right"></slot>
       </div>
@@ -22,85 +32,34 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
-import { ref } from 'vue'
-import logo from '@/assets/logo.webp'
-import settingIcon from '@/assets/icons/setting.svg'
-import messageIcon from '@/assets/icons/message.svg'
-import userIcon from '@/assets/icons/user.svg'
-import settingFillIcon from '@/assets/icons/setting.fill.svg'
-import messageFillIcon from '@/assets/icons/message.fill.svg'
-import userFillIcon from '@/assets/icons/user.fill.svg'
-
-const $route = useRoute()
-const logoSrc = logo;
+const logoSrc = '/src/assets/logo.svg'
 const logoAlt = 'Logo'
 
-// 将静态路径转换为动态路径
-const convertIconPath = (path) => {
-  return new URL(path, import.meta.url).href
-}
-
-// 定义所有要发送的事件
-const emit = defineEmits(['toggleNotifications', 'toggleSettings', 'toggleUser'])
-defineExpose({
-  clearAllActiveState
-})
-
 // 图标配置
-const headerIcons = ref([
+const headerIcons = [
   {
     name: 'setting',
-    path: settingIcon,
-    activePath: settingFillIcon,
-    isActive: false,
-    onClick: () => emit('toggleSettings')
+    path: '/src/assets/icons/setting.svg',
+    onClick: () => console.log('setting clicked')
   },
   {
     name: 'message',
-    path: messageIcon,
-    activePath: messageFillIcon,
-    isActive: false,
+    path: '/src/assets/icons/message.svg',
     onClick: () => emit('toggleNotifications')
   },
   {
     name: 'user',
-    path: userIcon,
-    activePath: userFillIcon,
-    isActive: false,
-    onClick: () => emit('toggleUser')
+    path: '/src/assets/icons/user.svg',
+    onClick: () => console.log('user clicked')
   }
-])
+]
 
-// 切换图标激活状态
-const toggleIcon = (icon) => {
-  if (icon.isActive) {
-    icon.isActive = false
-  } else {
-    // 否则重置所有图标状态
-    headerIcons.value.forEach(item => {
-      item.isActive = false
-    })
-    // 设置当前点击图标为激活状态
-    icon.isActive = true
-  }
-  // 执行点击回调
-  icon.onClick()
-}
-
-function clearAllActiveState() {
-  // 清除所有图标的激活状态
-  headerIcons.value.forEach(item => {
-    item.isActive = false
-  })
-}
+const emit = defineEmits(['toggleNotifications'])
 </script>
 
 <style scoped>
 .common-header {
   background-color: #fff;
-  width: 100vw;
-  margin-top: 3px;
   /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
 }
 
@@ -108,13 +67,12 @@ function clearAllActiveState() {
   height: 100%;
   display: flex;
   align-items: center;
-  /* justify-content: space-between; */
+  justify-content: space-between;
   padding: 0 20px;
-  position: relative;
 }
 
 .logo-container {
-  height: 95%;
+  height: 100%;
   display: flex;
   align-items: center;
 }
@@ -128,8 +86,7 @@ function clearAllActiveState() {
   display: flex;
   align-items: center;
   gap: 20px;
-  position: absolute;
-  right: 20px;
+  margin-left: 1400px;
 }
 
 .icons-container {
@@ -139,8 +96,14 @@ function clearAllActiveState() {
 }
 
 .header-icon {
-  width: 33px;
-  height: 33px;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.header-icon:hover {
+  opacity: 1;
 }
 </style>

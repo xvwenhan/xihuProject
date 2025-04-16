@@ -1,132 +1,139 @@
+@ -0,0 +1,138 @@
 <template>
-  <div class="sidebar">
-    <ul class="nav-list">
-      <li v-for="item in menuItems" :key="item.index">
-        <router-link :to="item.route" class="nav-item" :class="{ 'active-nav-item': $route.path === item.route }">
-          <img class="icon"
-            :src="$route.path === item.route ? convertIconPath(item.activeIcon) : convertIconPath(item.icon)" />
-          {{ item.title }}
-        </router-link>
-      </li>
-    </ul>
-  </div>
+  <el-container class="container">
+    <el-aside class="aside">
+      <el-row >
+        <el-col :span="24">
+          <el-menu
+          :default-active="2"
+          class="el-menu-vertical-demo"
+          @select="handleSelect"
+          >
+            <el-menu-item v-for="item in menuItems" :key="item.index" :index="item.index">
+              <img :src="item.icon" class="menu-icon">
+              <span slot="title">{{ item.title }}</span>
+            </el-menu-item>
+          </el-menu>
+        </el-col>
+      </el-row>
+    </el-aside>
+  </el-container>
+
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
-import homeIcon from '@/assets/icons/home.svg'
-import homeFillIcon from '@/assets/icons/home.fill.svg'
-import compassIcon from '@/assets/icons/compass.svg'
-import compassFillIcon from '@/assets/icons/compass.fill.svg'
-import rocketIcon from '@/assets/icons/rocket.svg'
-import rocketFillIcon from '@/assets/icons/rocket.fill.svg'
-import planIcon from '@/assets/icons/plan.svg'
-import planFillIcon from '@/assets/icons/plan.fill.svg'
-import myIcon from '@/assets/icons/my.svg'
-import myFillIcon from '@/assets/icons/my.fill.svg'
+import { ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ElAside,ElMenu,ElMenuItem,ElRow,ElCol,ElContainer} from 'element-plus'
+import 'element-plus/es/components/menu/style/css'
+import 'element-plus/es/components/menu-item/style/css'
 
-const $route = useRoute()
+const router = useRouter()
+const route = useRoute()
 
-// 将静态路径转换为动态路径
-const convertIconPath = (path) => {
-  return new URL(path, import.meta.url).href
-}
-
+const activeIndex = ref('1')
 const menuItems = [
   {
     index: '1',
-    icon: homeIcon,
-    activeIcon: homeFillIcon,
+    icon: 'src/assets/icons/home.svg',
     title: '对话',
     route: '/home'
   },
   {
     index: '2',
-    icon: compassIcon,
-    activeIcon: compassFillIcon,
+    icon:'src/assets/icons/compass.svg',
     title: '参会指南',
     route: '/compass'
   },
   {
     index: '3',
-    icon: rocketIcon,
-    activeIcon: rocketFillIcon,
-    title: '会议直播',
+    icon: 'src/assets/icons/rocket.svg',
+    title: '会议',
     route: '/meeting'
   },
   {
     index: '4',
-    icon: planIcon,
-    activeIcon: planFillIcon,
+    icon: 'src/assets/icons/plan.svg',
     title: '会议议程',
     route: '/agenda'
   },
   {
     index: '5',
-    icon: myIcon,
-    activeIcon: myFillIcon,
+    icon: 'src/assets/icons/my.svg',
     title: '我的订阅',
     route: '/subscription'
   }
 ]
 
-// 可选：用于处理高亮时的图标切换（你可以自己定义高亮图标命名规则）
+// 处理菜单选择
+const handleSelect = (index) => {
+  const selectedItem = menuItems.find(item => item.index === index)
+  if (selectedItem) {
+    router.push(selectedItem.route)
+  }
+}
+
+// 监听路由变化，更新激活菜单项
+const updateActiveIndex = () => {
+  const currentRoute = route.path
+  const matchedItem = menuItems.find(item => item.route === currentRoute)
+  if (matchedItem) {
+    activeIndex.value = matchedItem.index
+  }
+}
+
+// 初始化时设置激活菜单项
+updateActiveIndex()
 </script>
 
 <style scoped>
-.logo {
-  color: #0E0E0E;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  margin: 20px 70px 40px 70px;
-}
-
-.sidebar {
-  width: 170px;
+.container {
+  /* margin-left: -400px; */
   height: 100vh;
-  border-right: 2px solid rgba(53, 92, 125, 0.3);
-  background-color: #FFF;
-
-  display: flex;
-  flex-direction: column;
 }
 
-.nav-list {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
+.aside {
+  height: 100vh;
+  background-color: #ffffff;
+  border-right: none; /* 移除默认右边框 */
+  display: flex; /* 使用 flex 布局来控制线的位置 */
+  flex-direction: column; /* 内容按列排列 */
+  padding: 20px 0; /* 给顶部和底部留出空白 */
+  position: relative; /* 为伪元素创造定位上下文 */
 }
 
-.nav-item {
-  color: #333;
-  text-decoration: none;
-  padding-top: 12px;
-  padding-bottom: 12px;
-  padding-left: 25px;
-
-  display: flex;
-  align-items: center;
-  font-size: 16px;
+.aside::after {
+  content: ""; /* 创建伪元素用于显示竖线 */
+  position: absolute;
+  top: 5px; /* 给竖线顶部留空白 */
+  bottom: 5px; /* 给竖线底部留空白 */
+  right: 0; /* 竖线靠右对齐 */
+  width: 1px; /* 竖线宽度 */
+  background-color: #dcdcdc; /* 竖线颜色 */
 }
 
-.nav-item:hover {
-  background-color: rgba(204, 204, 204, 0.5);
-  border-radius: 30px;
+.el-menu {
+  height: 100%; /* 菜单占满侧边栏高度 */
 }
 
-.active-nav-item {
-  background-color: rgba(204, 204, 204, 0.3);
-  border-left: 3px solid #355c7d;
+.el-menu-item {
+  font-size: 16px; /* 增大菜单项文字大小 */
+  height: 60px; /* 增加菜单项高度 */
+  line-height: 60px; /* 调整文字垂直居中 */
 }
 
-.icon {
-  width: 27px;
-  height: 27px;
-  margin-right: 10px;
-  color: #252525;
+.el-menu-item i {
+  font-size: 20px; /* 增大图标大小 */
+}
+
+/* 修改菜单宽度 */
+.el-aside {
+  width: 250px !important; /* 增加侧边栏宽度 */
+}
+
+.menu-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 5px;
 }
 </style>
