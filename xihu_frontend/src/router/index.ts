@@ -6,6 +6,7 @@ import AgendaView from '../views/Meeting/AgendaView.vue'
 import SubscriptionView from '../views/Meeting/SubscriptionView.vue'
 import CompassView from '../views/Compass/CompassView.vue'
 
+
 const router = createRouter({
   // history: createWebHistory(import.meta.env.BASE_URL),
   history: createWebHashHistory(import.meta.env.BASE_URL),

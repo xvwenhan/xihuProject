@@ -28,7 +28,7 @@ builder.Services.AddDbContext<UserDbContext>(options =>
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "UserService_";
+    options.InstanceName = "";
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -54,21 +54,24 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<IMeetingService, MeetingService>();
+builder.Services.AddScoped<IAgentService, AgentService>();
 builder.Services.AddScoped<NotificationService>();
-
+builder.Services.AddScoped<IWeChatAuthService, WeChatAuthService>();
 builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddHttpClient<IRecommendService, RecommendService>();
 
- //添加跨域策略
-// builder.Services.AddCors(options =>
-// {
-//     options.AddPolicy("AllowAll", policy =>
-//     {
-//         policy.AllowAnyOrigin()
-//               .AllowAnyMethod()
-//               .AllowAnyHeader();
-//     });
-// });
-
+//添加跨域策略
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+builder.WebHost.UseUrls("https://0.0.0.0:5001");
+//builder.WebHost.UseUrls("http://0.0.0.0:80");
 var app = builder.Build();
 
 /*// 使用跨域策略
@@ -89,7 +92,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 app.Run();

@@ -96,9 +96,90 @@ namespace UserService.Services
             return ApiResponse.Success("ok");
         }
 
-       
+        public async Task SendSseNotifications(string userId, HttpResponse response)
+        {
+            // 设置响应头
+            response.ContentType = "text/event-stream";
+            response.Headers.Append("Cache-Control", "no-cache");
+            response.Headers.Append("Connection", "keep-alive");
 
-        
+            while (true)
+            {
+                try
+                {
+                    Console.WriteLine($"用户 {userId} 正在接收通知...");
+
+                    // 查询用户的通知
+                    var notifications = GetNotificationsForUser(userId);
+                    Console.WriteLine($"用户 {userId} 的通知: {JsonSerializer.Serialize(notifications)}");
+
+                    if (notifications.Count > 0)
+                    {
+                        // 如果有通知，则发送通知
+                        foreach (var notification in notifications)
+                        {
+                            await response.WriteAsync($"data: {JsonSerializer.Serialize(notification)}\n\n");
+                            await response.Body.FlushAsync(); // 确保数据立即发送
+                        }
+                    }
+                    else
+                    {
+                        // 如果没有通知，则发送心跳信息
+                        await response.WriteAsync(": heartbeat\n\n");
+                        await response.Body.FlushAsync();
+                    }
+
+                    // 每隔 1 分钟检查一次
+                    await Task.Delay(TimeSpan.FromMinutes(1));
+                }
+                catch (Exception ex)
+                {
+                    // 记录异常并关闭连接
+                    Console.Error.WriteLine($"SSE 错误: {ex.Message}");
+                    break;
+                }
+            }
+        }
+
+        private List<object> GetNotificationsForUser(string userId)
+        {
+            // 获取当前本地时间
+            var now = DateTime.Now;
+            Console.WriteLine($"当前本地时间: {now}, 正在检索数据库...");
+
+            // 查询用户订阅的会议
+            var subscribedConferences = _context.Subscribes
+                .Where(s => s.UserId == int.Parse(userId)) // 用户订阅的会议
+                .Join(
+                    _context.Conferences,
+                    subscribe => subscribe.ConferenceId,
+                    conference => conference.ConferenceId,
+                    (subscribe, conference) => conference
+                )
+                .ToList();
+
+            // 筛选出接下来 10 分钟内开始的会议
+            var upcomingConferences = subscribedConferences
+                .Where(c =>
+                {
+                    // 计算会议的完整时间（日期 + 开始时间）
+                    var conferenceDateTime = (c.Date ?? DateTime.MinValue).Add(c.StartTime.HasValue ? c.StartTime.Value : TimeSpan.Zero);
+
+                    // 比较时间是否在未来 10 分钟内
+                    return conferenceDateTime > now && conferenceDateTime <= now.AddMinutes(10);
+                })
+                .Select(c => new
+                {
+                    conference_name = c.ConferenceName,
+                    start_time = c.Date.GetValueOrDefault().Add(c.StartTime ?? TimeSpan.Zero).ToString("yyyy-MM-dd HH:mm:ss")
+                })
+                .ToList();
+
+            Console.WriteLine($"找到 {upcomingConferences.Count} 条符合条件的会议。");
+
+            // 返回符合条件的会议
+            return upcomingConferences.Cast<object>().ToList();
+        }
     }
 
 }
