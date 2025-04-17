@@ -1,10 +1,11 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://localhost:5000/api';
+// const API_BASE_URL = 'https://localhost:5000/api';
+const API_BASE_URL = 'https://8.133.201.233/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 5000,
+  timeout: 70000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -16,6 +17,13 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token'); // 获取 JWT 令牌
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+      // 从token中解析用户ID
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        // config.headers['X-User-Id'] = payload.sub;
+      } catch (error) {
+        console.error('解析token失败:', error);
+      }
     }
     return config;
   },
