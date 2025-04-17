@@ -1,6 +1,6 @@
 
 <template>
-  登陆注册
+  登陆注册页面
 </template>
 
 <script setup lang="ts">

@@ -93,7 +93,7 @@ import Header from '@/components/Header.vue'
 import { ElContainer, ElMessage } from 'element-plus'
 import 'element-plus/es/components/menu/style/css'
 import 'element-plus/es/components/menu-item/style/css'
-import loading from '@/components/LoadComponent.vue'
+
 
 
 import { ref, computed, onMounted } from "vue";
