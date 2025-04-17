@@ -174,7 +174,7 @@ onUnmounted(() => {
   align-items: center;
   height: 100vh;
   width: 100vw;
-  background-color: #000000;
+  background-color: #f9f9f9;
 }
 
 .slider-container {
