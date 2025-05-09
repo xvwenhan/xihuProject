@@ -174,5 +174,138 @@ namespace ChatService.Services
         }
 
 
+        /// <summary>
+        /// 将QA存入Redis
+        /// </summary>
+        public async Task<ApiResponse<object>> StoreInRedisAsync(QARequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Question) || string.IsNullOrWhiteSpace(request.Answer))
+                {
+                    return ApiResponse.Fail<object>("问题和答案不能为空");
+                }
+
+                // 将问题转为特征键
+                var key = $"{request.Question}";
+                var value = JsonSerializer.Serialize(request);
+
+                // 7h过期
+                var options = new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(7)
+                };
+
+                await _cache.SetStringAsync(key, value, options);
+
+                // 将键添加到集合中（用于后续获取所有键）
+                var keysSet = "question_keys";
+                var existingKeysJson = await _cache.GetStringAsync(keysSet);
+                var existingKeys = string.IsNullOrEmpty(existingKeysJson)
+                    ? new List<string>()
+                    : JsonSerializer.Deserialize<List<string>>(existingKeysJson);
+
+                existingKeys.Add(key);
+                await _cache.SetStringAsync(keysSet, JsonSerializer.Serialize(existingKeys));
+                
+                return ApiResponse.Success<object>(null, "存入成功");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "操作失败");
+                return ApiResponse.Fail<object>($"操作失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 缓存中语义匹配问题
+        /// </summary>
+        public async Task<ApiResponse<QAResponse>> FetchFromRedisAsync(string question)
+        {
+            try
+            {
+                Console.WriteLine($"传给python的参数: {question}");
+                var pythonUrl = _config["ServiceUrls:Semantic"];
+                var requestUrl = $"{pythonUrl}/semantic_match?question={Uri.EscapeDataString(question)}";
+                using var httpClient = new HttpClient();
+
+                var response = await httpClient.GetAsync(requestUrl);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("调用Python服务失败，状态码：{Code}", response.StatusCode);
+                    return ApiResponse.Fail<QAResponse>("Python 服务调用失败");
+                }
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var jsonDoc = JsonDocument.Parse(responseBody);
+
+                var root = jsonDoc.RootElement;
+
+                if (!root.GetProperty("success").GetBoolean())
+                {
+                    return ApiResponse.Fail<QAResponse>("未命中缓存");
+                }
+
+                var data = root.GetProperty("data");
+
+                var result = new QAResponse
+                {
+                    Question = data.GetProperty("question").GetString() ?? "",
+                    Answer = data.GetProperty("answer").GetString() ?? ""
+                };
+
+                return ApiResponse.Success(result, "来自 Python 服务");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "调用 Python 服务失败");
+                return ApiResponse.Fail<QAResponse>($"调用 Python 服务失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 判断问题是否是通用性的问题
+        /// </summary>
+        public async Task<bool> GRAsync(InputRequest request)
+        {
+            // 自动生成UUID格式的唯一会话ID
+            var sid = Guid.NewGuid().ToString();
+            var passinreq = new AgentExecuteRequest
+            {
+                id = _appSettings.ModelId_GR,
+                sid = sid,
+                input = request.input
+            };
+            SetHeaders();
+
+            var jsonContent = JsonSerializer.Serialize(passinreq);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            // 向模型发送问题
+            var response = await client.PostAsync("https://www.das-ai.com/open/api/v2/agent/execute", content);
+            var temp = await response.Content.ReadAsStringAsync();
+            var apiResponse = JsonSerializer.Deserialize<ApiJResponse>(temp);
+
+            // 获取 content 字符串（是一个 JSON 格式字符串）
+            var contentJson = apiResponse?.data?.session?.messages?[1]?.content;
+            Console.WriteLine($"contentJson = {contentJson}");
+            foreach (var c in contentJson)
+            {
+                Console.WriteLine($"Character: {c}, Unicode: {(int)c}");
+            }
+
+            if (string.IsNullOrWhiteSpace(contentJson))
+                return false; 
+
+            // 再次反序列化 content 字符串
+            using var doc = JsonDocument.Parse(contentJson);
+            if (doc.RootElement.TryGetProperty("isCommon", out var isCommonProp))
+            {
+                return isCommonProp.GetBoolean();
+            }
+
+            // 有什么问题一概返回false防止存储个性化QA
+            return false; 
+        }
+
     }
 }
