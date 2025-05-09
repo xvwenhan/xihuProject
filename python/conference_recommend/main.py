@@ -101,16 +101,39 @@ def content_based_recommend(user_id, df_subscribe, df_conference, faiss_index, c
     return recommended_conferences
 
 
-# **4. 混合推荐** （此版本没有去除用户已订阅的会议）
+# # **4. 混合推荐** （此版本没有去除用户已订阅的会议）
+# def hybrid_recommend(user_id, df_subscribe, df_conference, faiss_index, conference_ids, top_k=5):
+#     """混合协同过滤和内容推荐"""
+#     cf_recommendations = collaborative_filtering_recommend(user_id, df_subscribe, top_k)
+#     content_recommendations = content_based_recommend(user_id, df_subscribe, df_conference, faiss_index, conference_ids,
+#                                                       top_k)
+
+#     # 结合两种推荐方法，去重
+#     final_recommendations = list(set(cf_recommendations + content_recommendations))[:top_k]
+#     return final_recommendations
+
+
 def hybrid_recommend(user_id, df_subscribe, df_conference, faiss_index, conference_ids, top_k=5):
-    """混合协同过滤和内容推荐"""
+    """混合协同过滤和内容推荐，并排除用户已订阅会议（如果去除后仍足够）"""
     cf_recommendations = collaborative_filtering_recommend(user_id, df_subscribe, top_k)
-    content_recommendations = content_based_recommend(user_id, df_subscribe, df_conference, faiss_index, conference_ids,
-                                                      top_k)
+    content_recommendations = content_based_recommend(user_id, df_subscribe, df_conference, faiss_index, conference_ids, top_k)
 
     # 结合两种推荐方法，去重
-    final_recommendations = list(set(cf_recommendations + content_recommendations))[:top_k]
-    return final_recommendations
+    final_recommendations = list(set(cf_recommendations + content_recommendations))
+
+    # 获取用户已订阅的会议
+    user_subscribed = set(df_subscribe[df_subscribe["user_id"] == user_id]["conference_id"])
+
+    # 计算去除订阅会议后的数量
+    filtered_recommendations = [conf_id for conf_id in final_recommendations if conf_id not in user_subscribed]
+
+    # 如果去除后仍 ≥ top_k，则返回去重后的结果
+    if len(filtered_recommendations) >= top_k:
+        return filtered_recommendations[:top_k]
+
+    # 如果去除后不足 top_k，则返回原始推荐（包含已订阅的会议）
+    return final_recommendations[:top_k]
+
 
 
 
