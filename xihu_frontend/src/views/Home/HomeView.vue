@@ -26,6 +26,39 @@
          </div> -->
           <div class="rank-area" :class="{ 'is-collapsed': collapseRankArea }"
             :style="{ flex: (showHotRank || showRec) ? '1' : '0', borderColor: (showHotRank || showRec) ? 'transparent' : '' }">
+            <!-- 热度排行容器 -->
+            <div class="hot-rank-container">
+              <!-- 热度排行按钮 -->
+              <div class="rank-box" :class="{ 'is-collapsed': showHotRank }" @click="toggleHotRank">
+                热度排行
+              </div>
+
+              <!-- 动画包裹的会议信息 -->
+              <transition name="slide-fade">
+                <div v-show="showHotRank" class="hot-rank-content">
+                  <el-popover v-for="(meeting, index) in displayedMeetings" :key="meeting.id" trigger="click"
+                    placement="bottom" offset="-12" width="200" persistent="false"
+                    :ref="el => setPopoverMeetingRef(el, index)" hide-after="0">
+                    <template #reference>
+                      <div class="meeting-item">
+                        <!-- <p>{{ meeting.name }} - 订阅人数：{{ meeting.subscribeNum }}</p> -->
+                        <div class="meeting-item-inner-1">{{ meeting.name.length > 25 ? meeting.name.substring(0,
+                          25)
+                          + '...' :
+                          meeting.name }}</div>
+                        <div class="meeting-item-inner-2">订阅人数：{{ meeting.subscribeNum }}</div>
+                      </div>
+                    </template>
+                    <div>
+                      <div v-for="question in METTING_ASK" @click="meetingAsk(meeting.name, question, index, false)"
+                        class="meeting-popover-item">
+                        {{
+                          question }}</div>
+                    </div>
+                  </el-popover>
+                </div>
+              </transition>
+            </div>
             <!-- 个性推荐 -->
             <div class="hot-rank-container">
               <!-- 个性推荐按钮 -->
