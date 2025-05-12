@@ -1,4 +1,4 @@
-@ -0,0 +1,53 @@
+
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
@@ -14,18 +14,18 @@ function createWindow() {
   })
 
   // 设置 CSP 头
-  win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*;",
-          "img-src 'self' data: http://localhost:*;",
-          "connect-src 'self' http://localhost:*;"
-        ]
-      }
-    })
-  })
+  // win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+  //   callback({
+  //     responseHeaders: {
+  //       ...details.responseHeaders,
+  //       'Content-Security-Policy': [
+  //         "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*;",
+  //         "img-src 'self' data: http://localhost:*;",
+  //         "connect-src 'self' http://localhost:*;"
+  //       ]
+  //     }
+  //   })
+  // })
 
   // 在开发环境中加载 Vite 开发服务器
   if (process.env.NODE_ENV === 'development') {
