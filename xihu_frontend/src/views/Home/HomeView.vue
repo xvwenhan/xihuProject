@@ -17,7 +17,7 @@
             <div class="intro-icon">Icon</div>
             <div class="intro-text">我是西湖论剑，你的个人会议助手</div>
           </div>
-          <div class="rank-area" v-if="messages.length === 0" style="flex: 1;">
+          <div class="rank-area">
             <div class="rank-box">
               热度排行
             </div>
@@ -27,37 +27,24 @@
           </div>
 
           <!-- 对话框 -->
-          <div class="chat-box" :style="messages.length > 0 ? 'flex: 1;' : ''">
-            <!-- 消息列表 -->
-            <div ref="msg_list_main" class="message-list main">
+          <div class="chat-box">
+            <!-- 消息显示区域 -->
+            <div class="message-list">
               <div v-for="(message, index) in messages" :key="index" class="message-item">
                 <div :class="message.isUser ? 'user-message' : 'bot-message'">
                   {{ message.text }}
                 </div>
               </div>
-              <!-- <div v-if="messages.length === 0" class="empty-message">
-                暂无消息
-              </div> -->
-              <!-- 猜你想问 -->
-              <div class="tooltip-wrapper-new" v-if="tooltipVisible">
-                <div v-for="(tooltip, index) in questionToolTips" :key="index" class="tooltip-wrapper"
-                  @click="handleTooltipClick(tooltip)">
-                  <div class="custom-tooltip">
-                    {{ tooltip }}
-                  </div>
-                </div>
-              </div>
             </div>
+
+            <!-- 输入框和发送按钮 -->
 
             <!-- 输入框和发送按钮 -->
             <div class="input-container">
               <el-input v-model="chatInput" placeholder="请输入您的问题" class="chat-input" @keyup.enter="sendMessage">
                 <!-- 将发送按钮作为图标插入到输入框内部 -->
                 <template #append>
-                  <el-button @click="sendMessage" class="send-button" type="primary">
-                    <spam>发送</spam>
-                    <spam class="send-button-icon" />
-                  </el-button>
+                  <el-button @click="sendMessage" class="send-button" type="primary"></el-button>
                 </template>
               </el-input>
             </div>
@@ -65,8 +52,8 @@
 
 
 
-          <!-- 猜你想问 旧版 -->
-          <!-- <div style="position: absolute; bottom: 10px; left: 10px; display: flex; flex-direction: column;">
+          <!-- 猜你想问 -->
+          <div style="position: absolute; bottom: 10px; left: 10px; display: flex; flex-direction: column;">
             <div v-if="tooltipVisible" v-for="(tooltip, index) in questionToolTips" :key="index" class="tooltip-wrapper"
               @click="handleTooltipClick(tooltip)">
               <div class="custom-tooltip">
@@ -79,7 +66,7 @@
               <div style=" font-weight: 600; color: #ffffff;">猜你</div>
               <div style="font-weight: 600; color: #ffffff;">想问</div>
             </div>
-          </div> -->
+          </div>
 
         </el-main>
 
@@ -162,7 +149,7 @@
 
 <script setup>
 import 'element-plus/dist/index.css';
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import Navbar from '@/components/Navbar.vue'
 import Header from '@/components/Header.vue'
 import AvatarGenerator from '@/components/AvatarGenerator.vue'
@@ -221,11 +208,9 @@ const page = ref(1); // 当前页数
 const pageSize = ref(10); // 每页显示的消息数量
 const totalCount = ref(0); // 总消息数
 const history = ref([])
-const rankMeetings = ref([]) // 热度排行
+
 const tooltipVisible = ref(false)
 const questionToolTips = ref([])
-
-const msg_list_main = ref()
 
 const userInfo = ref({
   name: '',
@@ -371,8 +356,6 @@ const startSSEWithFetch = async () => {
 // 在组件挂载时启动 SSE
 onMounted(() => {
   startSSEWithFetch();
-  getGuessAsk();
-  fetchRanking();
 });
 
 // 在组件卸载时关闭 SSE 连接
@@ -399,6 +382,11 @@ const toggleUser = () => {
 //获取猜你想问
 const getGuessAsk = async () => {
   console.log("猜你想问")
+  if (tooltipVisible.value) {
+    tooltipVisible.value = false
+    return
+  }
+  tooltipVisible.value = !tooltipVisible.value
   const loading = ElLoading.service({
     lock: true,
     text: '获取猜你想问...',
@@ -462,7 +450,6 @@ const sendMessage = async () => {
     ElMessage.warning('请输入问题');
     return;
   }
-  tooltipVisible.value = false; // 隐藏猜你想问提示框
 
   // 用户消息
   const userMessage = {
@@ -470,25 +457,10 @@ const sendMessage = async () => {
     isUser: true
   };
   messages.value.push(userMessage);
-  let chatinput_temp = chatInput.value
-  chatInput.value = '';
-
-  // // 测试消息
-  // messages.value.push({
-  //   text: '测试消息',
-  //   isUser: false
-  // });
-  // // 猜你想问
-  // getGuessAsk();
-  // tooltipVisible.value = true; // 显示猜你想问提示框
-  // nextTick(() => {
-  //   msg_list_main.value.scrollTop = msg_list_main.value.scrollHeight; // 滚动到底部
-  // })
-  // return;
 
   try {
     const { data } = await api.post('/chat/private/execute', {
-      input: chatinput_temp
+      input: chatInput.value
     });
 
     if (data.success) {
@@ -496,7 +468,6 @@ const sendMessage = async () => {
       // 获取返回的消息
       //const sessionMessages = data.data.answer;
       const botMessage = data.data.answer;
-      console.log("botMessage", botMessage)
 
       // 获取机器人回复的消息
       //const botMessage = sessionMessages.find(message => message.role === 'assistant');
@@ -509,22 +480,16 @@ const sendMessage = async () => {
         };
         messages.value.push(botResponse);
       }
-      //messages.value.push(botResponse);
-
-      // 猜你想问
-      getGuessAsk();
-      tooltipVisible.value = true; // 显示猜你想问提示框
-      console.log("tooltipVisible", tooltipVisible.value)
-      nextTick(() => {
-        msg_list_main.value.scrollTop = msg_list_main.value.scrollHeight; // 滚动到底部
-      })
+      messages.value.push(botResponse);
     } else {
       ElMessage.error(data.message);
     }
   } catch (error) {
     ElMessage.error('发送失败');
     console.error(error);
-    chatInput.value = chatinput_temp;
+  } finally {
+    // 清空输入框
+    chatInput.value = '';
   }
 };
 
@@ -575,23 +540,6 @@ const handlePageChange = (newPage) => {
 // 处理猜你想问点击
 const handleTooltipClick = (tooltip) => {
   chatInput.value = tooltip;
-  sendMessage();
-};
-
-// 获取热度排行
-const fetchRanking = async () => {
-  try {
-    const response = await api.get("/user/private/sort", {
-      params: {
-        SortByTime: false,
-        IsAsc: false,
-      }
-    });
-    rankMeetings.value = response.data.data;
-  } catch (error) {
-    console.error("获取订阅会议失败:", error);
-    ElMessage.error("获取订阅会议失败");
-  }
 };
 
 // onMounted(async () => {
@@ -619,7 +567,6 @@ const fetchRanking = async () => {
   flex-direction: column;
   --el-header-height: 60px;
   --notification-title-height: 40px;
-  --chat-input-height: 40px;
   width: 100vw;
 }
 
@@ -648,6 +595,14 @@ const fetchRanking = async () => {
   /* 保证子项填满容器 */
 }
 
+.main-content {
+  flex: 3;
+  /* 主内容区域比右侧通知区域更宽 */
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+}
+
 .right-sidebar {
   flex: 1;
   /* 右侧通知区域的相对宽度 */
@@ -660,85 +615,13 @@ const fetchRanking = async () => {
   overflow: hidden;
 }
 
-.main-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  max-width: 70%;
-  /* 确保 main-content 填满父容器高度 */
-  padding: 20px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  overflow: hidden;
-  /* 防止内容溢出 */
-}
-
-
-/* 引入部分 */
-.intro {
-  margin-bottom: 20px;
-  /* 与下方内容保持一定间距 */
-}
-
-.chat-box {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  margin-top: 10px;
-  max-height: calc(100% - 100px);
-}
-
-/* 消息列表 */
-.message-list {
-  height: 100%;
-  overflow-y: auto;
-  /* 允许垂直滚动 */
-  scrollbar-width: none;
-  /* 隐藏滚动条（Firefox） */
-  -ms-overflow-style: none;
-  /* 隐藏滚动条（IE/Edge） */
-}
-
-/* 主页消息列表 */
-.message-list.main {
-  height: calc(100% - var(--chat-input-height) - 20px);
-}
-
-/* 针对 Webkit 浏览器隐藏滚动条 */
-.message-list::-webkit-scrollbar {
-  display: none;
-  /* 完全隐藏滚动条 */
-}
-
-/* 单条消息样式 */
-.message-item {
-  margin: 10px 0;
-  word-wrap: break-word;
-}
-
-/* 暂无消息样式 */
-.empty-message {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  flex: 1;
-  /* 填充整个消息列表区域 */
-  color: #999;
-  font-size: 16px;
-  text-align: center;
-}
-
-/* 输入框容器样式 */
-.input-container {
-  margin-top: 20px;
-  /* 固定间距 */
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
 /* 主要内容区域布局样式 */
+.intro {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
 .intro-icon {
   width: 50px;
   height: 50px;
@@ -759,7 +642,6 @@ const fetchRanking = async () => {
 .rank-area {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 5vw;
 }
 
@@ -775,43 +657,37 @@ const fetchRanking = async () => {
   font-weight: bold;
 }
 
-
-
-/* 输入框和按钮的样式 */
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  /* overflow: hidden; */
+.notification-title {
+  height: var(--notification-title-height);
+  margin-bottom: 20px;
+  position: sticky;
+  top: 0;
 }
 
-
-
-.chat-input {
-  height: var(--chat-input-height);
-  --el-input-inner-height: 100%;
+.notification-title-inner {
+  font-weight: bold;
+  font-size: 20px;
+  color: #333;
 }
 
-.send-button-icon {
-  margin-left: 7px;
-  margin-bottom: 3px;
-  width: 20px;
-  height: 20px;
-  background: url('@/assets/icons/send.svg') no-repeat center center;
-  background-size: contain;
-  border: none;
+.notification-box {
+  background-color: #e9e9e9;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  color: #333;
 }
 
-.send-button {
-  width: 80px;
-  height: 30px;
-  border: none;
-  padding-left: 10px;
-  padding-right: 10px;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* 消息列表 */
+.message-list {
+  margin-bottom: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* 单条消息样式 */
+.message-item {
+  margin: 10px 0;
+  word-wrap: break-word;
 }
 
 /* 用户消息样式 */
@@ -835,7 +711,39 @@ const fetchRanking = async () => {
   margin-right: auto;
 }
 
+/* 输入框和按钮的样式 */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* overflow: hidden; */
+}
 
+.input-container {
+  position: absolute;
+  bottom: 20%;
+  width: 45%;
+  padding: 10px 20px;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0px -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.chat-input {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.send-button {
+  width: 30px;
+  height: 30px;
+  background: url('src/assets/icons/send.svg') no-repeat center center;
+  background-size: contain;
+  border: none;
+  cursor: pointer;
+}
 
 /* 分页控件 */
 .el-pagination {
@@ -844,46 +752,23 @@ const fetchRanking = async () => {
   justify-content: center;
 }
 
-.notification-title {
-  height: var(--notification-title-height);
-  margin-bottom: 20px;
-  position: sticky;
-  top: 0;
-}
-
-.notification-title-inner {
-  font-weight: bold;
-  font-size: 20px;
-  color: #333;
-}
-
-.notification-box {
-  background-color: #e9e9e9;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  color: #333;
-}
-
 /* 弹出框 */
 .custom-tooltip {
-  margin-top: 3px;
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  margin-bottom: 0px;
   background-color: #cbf1f5;
   padding: 10px;
-  border-radius: 10px;
-  display: inline-block;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-radius: 5px;
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .tooltip-wrapper {
+  position: relative;
   cursor: pointer;
   width: 300px;
   height: 50px;
-  margin-top: 2px;
-  margin-bottom: 2px;
 }
 
 .conference-notification-box {
