@@ -23,7 +23,7 @@ namespace ChatService.Services
         private readonly IConfiguration _config;
 
         public AgentService(
-            MongoDBContext mongoDBContext, 
+            MongoDBContext mongoDBContext,
             IOptions<AppSettings> appSettings,
             ILogger<AgentService> logger,
             IDistributedCache cache,
@@ -36,10 +36,9 @@ namespace ChatService.Services
             _config = config;
         }
 
-        public async Task<ApiResponse<ChatResult>> ExecuteAgentAsync(InputRequest request,string userId)
+        public async Task<ApiResponse<ChatResult>> ExecuteAgentAsync(InputRequest request, string userId)
         {
             var response = new ChatResult();
-            Console.WriteLine($"传给python的参数: {request.input}");
             //首先检测redis中是否有了类似问题，有就返回答案
             var similarQA = await FetchFromRedisAsync(request.input);
             if (similarQA.Success)
@@ -49,20 +48,16 @@ namespace ChatService.Services
                 response.source = "redis";
                 response.time = DateTime.Now.ToString("yyyy年M月d日 HH:mm");
             }
-            else{
+            else
+            {
                 // 自动生成UUID格式的唯一会话ID
                 var sid = Guid.NewGuid().ToString();
-                var passinreq = new AgentExecuteRequests
+                var passinreq = new AgentExecuteRequest
                 {
-                    id = _appSettings.ModelId_New,
+                    id = _appSettings.ModelId,
                     sid = sid,
-                    inputs = new Dictionary<string, string>
-                        {
-                            { "input", request.input },
-                            { "userId", userId }
-                        }
-                 };
-
+                    input = request.input
+                };
                 SetHeaders();
 
                 var jsonContent = JsonSerializer.Serialize(passinreq);
@@ -72,15 +67,13 @@ namespace ChatService.Services
                 var temp = await httpResponse.Content.ReadAsStringAsync();
                 var apiResponse = JsonSerializer.Deserialize<ApiJResponse>(temp);
 
-              
                 response.answer = apiResponse.data.session.messages[1].content;
                 response.question = request.input;
                 response.source = "agent";
-                response.time= DateTime.Now.ToString("yyyy年M月d日 HH:mm");
+                response.time = DateTime.Now.ToString("yyyy年M月d日 HH:mm");
 
                 //判断问题是否通用
                 var commen = await GRAsync(new InputRequest { input = request.input });
-                Console.WriteLine($"问题是否通用: {commen}");
                 if (commen)
                 {
                     //是通用的存到redis中
@@ -89,12 +82,9 @@ namespace ChatService.Services
                         Question = request.input,
                         Answer = response.answer
                     });
-                    StoreToDBAsync(response, userId);
                     return ApiResponse.Success<ChatResult>(response, "通用问题，存入缓存");
                 }
             }
-            Console.WriteLine($"准备存入mongodb");
-            StoreToDBAsync(response, userId);
             return ApiResponse.Success<ChatResult>(response, "未存入缓存");
 
         }
@@ -127,7 +117,7 @@ namespace ChatService.Services
         //     return ApiResponse.Success(answer);
         // }
 
-        public async Task<ApiResponse<PagedResult>> GetChatLogs(string userId,int page,int pageSize)
+        public async Task<ApiResponse<PagedResult>> GetChatLogs(string userId, int page, int pageSize)
         {
             var result = await _mongoDBContext.GetChatHistoryPagedAsync(userId, page, pageSize);
             return ApiResponse.Success(result);
@@ -137,7 +127,7 @@ namespace ChatService.Services
         {
             // 使用 AppKey
             var appKey = _appSettings.AppKey;
-            var appSecret= _appSettings.AppSecret;
+            var appSecret = _appSettings.AppSecret;
 
             var sign = GenerateSign(appKey, appSecret);
 
@@ -146,12 +136,14 @@ namespace ChatService.Services
             client.DefaultRequestHeaders.Add("sign", sign);
         }
 
-        private async Task<bool> StoreToDBAsync(ChatResult res,string uid)
+        private async Task<bool> StoreToDBAsync(ApiJResponse res, string uid)
         {
             // 创建新的 JSON 对象，包含 data、tid 和当前时间
             var newJsonObject = new
             {
-                ChatResult = res,
+                sessionId = res.data.session.id,
+                messages = res.data.session.messages,
+                timestamp = DateTime.Now,
                 userId = uid
             };
             var bsonDocument = BsonDocument.Parse(JsonSerializer.Serialize(newJsonObject));
@@ -207,7 +199,7 @@ namespace ChatService.Services
 
                 existingKeys.Add(key);
                 await _cache.SetStringAsync(keysSet, JsonSerializer.Serialize(existingKeys));
-                
+
                 return ApiResponse.Success<object>(null, "存入成功");
             }
             catch (Exception ex)
@@ -224,8 +216,7 @@ namespace ChatService.Services
         {
             try
             {
-                Console.WriteLine($"传给python的参数: {question}");
-                var pythonUrl = _config["ServiceUrls:Semantic"];
+                var pythonUrl = _config["ServiceUrls:Python"];
                 var requestUrl = $"{pythonUrl}/semantic_match?question={Uri.EscapeDataString(question)}";
                 using var httpClient = new HttpClient();
 
@@ -288,13 +279,9 @@ namespace ChatService.Services
             // 获取 content 字符串（是一个 JSON 格式字符串）
             var contentJson = apiResponse?.data?.session?.messages?[1]?.content;
             Console.WriteLine($"contentJson = {contentJson}");
-            foreach (var c in contentJson)
-            {
-                Console.WriteLine($"Character: {c}, Unicode: {(int)c}");
-            }
 
             if (string.IsNullOrWhiteSpace(contentJson))
-                return false; 
+                return false;
 
             // 再次反序列化 content 字符串
             using var doc = JsonDocument.Parse(contentJson);
@@ -304,7 +291,7 @@ namespace ChatService.Services
             }
 
             // 有什么问题一概返回false防止存储个性化QA
-            return false; 
+            return false;
         }
 
     }

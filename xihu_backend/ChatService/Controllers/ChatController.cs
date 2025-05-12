@@ -40,5 +40,15 @@ public class ChatController : ControllerBase
         return response.Success ? Ok(response) : BadRequest(response);
     }
 
+
+
+    [HttpGet("public/guessAsk")]
+    public async Task<IActionResult> GuessWhatYouWantToAsk()
+    {
+        var response = await _redisQuestionService.GetTopQuestionsAsync(5);
+        return response.Success ? Ok(response) : BadRequest(response);
+
+    }
+
 }
 
