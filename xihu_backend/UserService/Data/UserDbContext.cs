@@ -16,6 +16,7 @@ namespace UserService.Data
         public DbSet<Conference> Conferences { get; set; }
         public DbSet<Subscribe> Subscribes { get; set; }
         public DbSet<PushSubscriptions> PushSubscriptions { get; set; }
+        public DbSet<MeetingLocation> MeetingLocations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -199,6 +200,34 @@ namespace UserService.Data
                     .OnDelete(DeleteBehavior.Cascade);  // 级联删除
 
             });
+           modelBuilder.Entity<MeetingLocation>(entity =>
+           {
+              entity.ToTable("meeting_locations");
+              entity.HasKey(e => e.Id);
+
+              entity.Property(e => e.Name)
+               .IsRequired()
+               .HasMaxLength(255);
+
+              entity.Property(e => e.Latitude)
+               .HasColumnType("decimal(10,8)");
+
+              entity.Property(e => e.Longitude)
+                .HasColumnType("decimal(11,8)");
+
+              // 添加两条路线字段
+              entity.Property(e => e.RouteFromAirport1)
+                .HasMaxLength(500)  // 根据实际需要调整长度
+                .HasColumnName("route_from_airport_1");  // 数据库列名，可自定义
+
+             entity.Property(e => e.RouteFromAirport2)
+                .HasMaxLength(500)
+                .HasColumnName("route_from_airport_2");
+
+             entity.Property(e => e.CreatedAt)
+              .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+             entity.Property(e => e.UpdatedAt);
+           });
         }
     }
 }
