@@ -22,7 +22,8 @@
                 </el-select>
               </div>
               <div class="video-box">
-                <iframe v-if="isLive" style="width: 100%; height: 400px;border-radius: 20px;"
+                <iframe v-if="isLive"
+                  style="width: 100%; height: 400px;border-radius: 20px;"
                   :src="`https://www.bilibili.com/blackboard/live/live-activity-player.html?cid=${currentCid}&quality=0`"
                   frameborder="no" framespacing="0" scrolling="no" allow="autoplay; encrypted-media"
                   allowfullscreen="true"></iframe>
@@ -32,7 +33,7 @@
               justify-content: space-between;
               align-items: center;
               margin-top: 20px;">
-                <div v-for="(msg, index) in messages" :key="index"  v-if="isLive"
+                <div v-for="(msg, index) in messages" :key="index"
                 style="font-size: 14px;color: #666;"><strong style="color: #000;">实时字幕：</strong>{{ msg.data }}</div>
                 <button class="button"  @click="download">资料下载</button>
               </div>
@@ -57,7 +58,7 @@
               <el-tabs v-model="activeTab" type="border-card" style="flex: 1; " class="custom-tabs">
                 <el-tab-pane label="历史转录" name="transcript">
                   <loading v-if="isFistLoading" />
-                  <div v-else v-for="msg in summary"  v-show="!isNoStart"
+                  <div v-else v-for="msg in summary"
                     :key="msg.id"
                     style="display: flex; flex-direction: column; width: 100%;">
                     <div style="background-color: rgba(90, 141, 191, 0.1);
@@ -71,7 +72,8 @@
                 </el-tab-pane>
                 <el-tab-pane label="总结" name="summary">
                   <loading v-if="isFistLoading" />
-                  <div v-else v-for="msg in summary" :key="msg.id"
+                  <div v-else v-for="msg in summary"
+                    :key="msg.id"
                     style="display: flex; flex-direction: column; width: 100%;">
                     <div style="background-color: rgba(90, 141, 191, 0.1);
                     padding: 10px;
@@ -138,14 +140,13 @@ const persons = [
 let currentCid = ref('8178490')
 let meetings = ref([]);
 let liveMeetings = ref([]);
-const summary = ref([]);
+const summary = ref('');
 const messages = ref([]);
 let eventSource = null;
 const messageType = ref('');
 const isListening = ref(false);
 const isFistLoading = ref(true);
 const isLive = ref(false);
-const isNoStart=ref(false)
 
 onMounted(() => {
   console.log('onMounted');
@@ -184,14 +185,12 @@ const download = () => {
   window.open('https://www.gcsis.cn/results/', '_blank')
 }
 const handleMeetingSelect = (meeting) => {
-  isNoStart.value = false;
   currentCid.value = meeting.channelId;
   if (meeting.liveStatus === 1) {
     isLive.value = true;
     ElMessage.success('当前会议正在直播');
-    // getSSE();
+    getSSE();
   } else if (meeting.liveStatus === 0) {
-    isNoStart.value = true;
     isLive.value = false;
     ElMessage.info('当前会议未开始');
   } else {
@@ -229,7 +228,6 @@ const getSSE = () => {
   if (eventSource) {
     eventSource.close();
   }
-  // const url = `https://8.133.201.233/api/video/public/stream/${selectedId.value}`
   const url = `https://localhost:5000/api/video/public/stream/${selectedId.value}`
   console.log('🔌 Connecting to SSE:', url)
 
@@ -258,10 +256,8 @@ const getSummary = async () => {
     const response = await api.get(`/video/public/summary/${selectedId.value}`);
     console.log("完整响应:", response);
     isFistLoading.value = false;
-    summary.value.splice(0, summary.value.length);
-    console.log("summary.value is", summary.value);
     summary.value = response.data
-    console.log("summary.value is", summary.value)
+    console.log("获取摘要成功", summary.value)
   } catch (error) {
     console.log("获取失败", error.response?.data?.message || error.message)
   }
