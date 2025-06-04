@@ -18,6 +18,7 @@ import { onMounted } from 'vue'
 <template>
   <RouterView />
   <!-- <router-view v-translate /> -->
+
 </template>
 
 <style>
