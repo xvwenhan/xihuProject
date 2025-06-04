@@ -5,11 +5,12 @@ import MeetingView from '../views/Meeting/MeetingView.vue'
 import AgendaView from '../views/Meeting/AgendaView.vue'
 import SubscriptionView from '../views/Meeting/SubscriptionView.vue'
 import CompassView from '../views/Compass/CompassView.vue'
+const translate = require('i18n-jsautotranslate')
 
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-
+  // history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
@@ -49,4 +50,8 @@ const router = createRouter({
   ],
 })
 
+router.afterEach(() => {
+  // 等待DOM更新后执行翻译
+  setTimeout(() => translate.execute(), 100)
+})
 export default router
