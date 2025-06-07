@@ -1,23 +1,50 @@
 <!DOCTYPE html>
 <html lang="">
   <head>
-    
+    <meta charset="UTF-8">
+    <!-- <meta http-equiv="Content-Security-Policy" content="
+  default-src 'self' 'unsafe-inline' 'unsafe-eval';
+  connect-src 'self' http://localhost:* 
+    https://api.dicebear.com 
+    https://api.translate.zvo.cn 
+    https://*.api.translate.zvo.cn;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' 
+    https://cdn.staticfile.net 
+    cdn.staticfile.net 
+    https://webapi.amap.com;
+  img-src 'self' data: http://localhost:* 
+    https://api.dicebear.com"> -->
+    <link rel="icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>西湖论剑会议助手</title>
+    <style>
+      .translateSelectLanguage{
+      position: fixed !important;
+      top: 10px !important;
+      right: 20vw !important;
+      z-index: 9999 !important;
+      padding: 8px 12px !important;
+      background: white !important;
+      border: 2px solid #ddd !important;
+      border-radius: 20px !important;
+      width: 150px !important;
+      transition: all 0.3s ease !important;
+      }
+      .translateSelectLanguage:hover{
+        border: 2px solid #cccccc !important;
+      }
+      </style>
   </head>
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
-    <script src="https://webapi.amap.com/maps?v=1.4.15&key=3272bab38d31ea9ac069abdbe018f86e"></script>
-    <script src="https://cdn.staticfile.net/translate.js/3.8.0/translate.js"></script>
+    <!-- <script src="https://webapi.amap.com/maps?v=1.4.15&key=3272bab38d31ea9ac069abdbe018f86e"></script> -->
+    <script src="https://cdn.staticfile.net/translate.js/3.12.0/translate.js"></script>
     <script>
-    // // 初始化翻译，默认中文简体
-    // translate.language.setLocal('chinese_simplified');
-    // translate.service.use('client.edge'); // 使用免费翻译服务
-    // translate.execute(); // 执行翻译
-
 
     // 翻译初始化方式
     translate.setConfig({
-    client: 'edge', // 明确指定使用 edge 模式
+    client: 'edge', 
     defaultLanguage: 'chinese_simplified'
     })
     translate.execute()
