@@ -8,40 +8,6 @@
       <!-- 主要内容与右侧区域 -->
       <el-container class="content-container">
 
-        <!-- 开始线 -->
-        <!-- <div class="p-4">
-          <h2 class="text-xl font-bold mb-4">会议语音监听控制</h2>
-
-          <div class="mb-4">
-            <label class="block mb-1">会议 ID：</label>
-            <input v-model="meetingId" type="text" class="border p-2 w-full" placeholder="请输入会议 ID" />
-          </div>
-
-          <div class="mb-4">
-            <label class="block mb-1">房间号（仅开始时需要）：</label>
-            <input v-model="roomId" type="text" class="border p-2 w-full" placeholder="请输入房间号" />
-          </div>
-
-          <div class="flex gap-4">
-            <button @click="startSession" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-              开始监听
-            </button>
-            <button @click="stopSession" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-              结束监听
-            </button>
-            <button @click="getSSE" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-              获取
-            </button>
-          </div>
-          <ul>
-            <li v-for="(msg, index) in messages" :key="index">
-              <strong>{{ msg.type }}</strong>: {{ msg.data }}
-            </li>
-          </ul>
-        </div> -->
-        <!-- 终止线 -->
-
-
 
 
 
