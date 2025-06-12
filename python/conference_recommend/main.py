@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import faiss
 from collections import defaultdict
+from configparser import ConfigParser
 import mysql.connector
 
 from extract_feature import extract_description_feature
@@ -11,18 +12,20 @@ from initialize_model import initialize_clip_model
 import torch
 import torch.nn.functional as F
 
-# 使用你封装好的 CLIP 相关函数
 device, model, preprocess = initialize_clip_model()
 
 
 # **1. 读取 MySQL 数据**
 def get_mysql_connection():
     """连接 MySQL 数据库"""
+    config = ConfigParser()
+    config.read('config.ini')
+    db_config = config['mysql']
     return mysql.connector.connect(
-        host='8.133.201.233',
-        user='xihu',
-        password='Xihu2009@',
-        database='XihuUser'
+        host=db_config['host'],
+        user=db_config['user'],
+        password=db_config['password'],
+        database=db_config['database']
     )
 
 
@@ -101,17 +104,16 @@ def content_based_recommend(user_id, df_subscribe, df_conference, faiss_index, c
     return recommended_conferences
 
 
-# # **4. 混合推荐** （此版本没有去除用户已订阅的会议）
+# **4. 混合推荐** （此版本没有去除用户已订阅的会议）
 # def hybrid_recommend(user_id, df_subscribe, df_conference, faiss_index, conference_ids, top_k=5):
 #     """混合协同过滤和内容推荐"""
 #     cf_recommendations = collaborative_filtering_recommend(user_id, df_subscribe, top_k)
 #     content_recommendations = content_based_recommend(user_id, df_subscribe, df_conference, faiss_index, conference_ids,
 #                                                       top_k)
-
+#
 #     # 结合两种推荐方法，去重
 #     final_recommendations = list(set(cf_recommendations + content_recommendations))[:top_k]
 #     return final_recommendations
-
 
 def hybrid_recommend(user_id, df_subscribe, df_conference, faiss_index, conference_ids, top_k=5):
     """混合协同过滤和内容推荐，并排除用户已订阅会议（如果去除后仍足够）"""
@@ -135,8 +137,6 @@ def hybrid_recommend(user_id, df_subscribe, df_conference, faiss_index, conferen
     return final_recommendations[:top_k]
 
 
-
-
 # **5. 主函数**
 def make_recommendation(user_id):
     df_subscribe, df_agenda, df_conference = load_data()
@@ -150,6 +150,6 @@ def make_recommendation(user_id):
 
 
 # 运行推荐
-# if __name__ == "__main__":
-#     test_user_id = 7  # 测试用户 ID
-#     make_recommendation(test_user_id)
+if __name__ == "__main__":
+    test_user_id = 7  # 测试用户 ID
+    make_recommendation(test_user_id)

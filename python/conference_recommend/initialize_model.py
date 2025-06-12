@@ -12,3 +12,13 @@ def initialize_clip_model():
     # 加载预训练的 CLIP 模型，ViT-B/32 是一种视觉 Transformer 架构（有不同的模型可以选择）。
     # preprocess 是一个函数，用于对输入的图像进行预处理（例如调整大小、标准化等），以适应 CLIP 模型的输入要求。
     return device, model, preprocess
+
+
+# def get_mysql_connection():
+#     """连接 MySQL 数据库"""
+    # return mysql.connector.connect(
+    #     host='8.133.201.233',
+    #     user='xihu',
+    #     password='Xihu2009@',
+    #     database='XihuUser'
+    # )
