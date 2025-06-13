@@ -1,6 +1,6 @@
 ﻿namespace UserService.DTOs
 {
-    public class RegisterRequest
+    public class UserDTOs
     {
         //public string Username { get; set; }
         public string Email { get; set; }

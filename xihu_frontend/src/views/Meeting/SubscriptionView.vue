@@ -8,6 +8,43 @@
       <!-- 主要内容与右侧区域 -->
       <el-container class="content-container">
 
+        <!-- 开始线 -->
+        <div class="p-4">
+          <h2 class="text-xl font-bold mb-4">会议语音监听控制</h2>
+
+          <div class="mb-4">
+            <label class="block mb-1">会议 ID：</label>
+            <input v-model="meetingId" type="text" class="border p-2 w-full" placeholder="请输入会议 ID" />
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1">房间号（仅开始时需要）：</label>
+            <input v-model="roomId" type="text" class="border p-2 w-full" placeholder="请输入房间号" />
+          </div>
+
+          <div class="flex gap-4">
+            <button @click="startSession" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+              开始监听
+            </button>
+            <button @click="stopSession" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+              结束监听
+            </button>
+          </div>
+
+          <p v-if="message" class="mt-4 text-blue-700 font-semibold">{{ message }}</p>
+        </div>
+
+        <div v-if="eventSource">
+          <h2>SSE 消息列表</h2>
+          <ul>
+            <li v-for="(msg, index) in messages" :key="index">
+              <strong>[{{ msg.type }}]</strong> {{ msg.data }}
+            </li>
+          </ul>
+        </div>
+        <!-- 终止线 -->
+
+
 
 
 
@@ -107,66 +144,44 @@ import api from '../../api/index.js';
 //////////////////////////////////////////////////////////////////////////////开始线
 
 import { onBeforeUnmount } from 'vue'
+const meetingId = ref('')
 const roomId = ref('')
+const message = ref('')
+let eventSource = null
 
-const meetingId = ref('');
-const messages = ref([]);
-let eventSource = null;
-const message = ref('');
-const messageType = ref('');
-const isListening = ref(false);
+const messages = ref([])
 
 function parseSSE(event) {
-  console.log("接收到事件：", event.type, event.data);
-  if (event.type === 'error') {
-    message.value = `SSE 错误: ${event.data || '未知错误'}`;
-    messageType.value = 'error';
-    messages.value.push({ type: 'error', data: event.data || '连接错误' });
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
-      isListening.value = false;
-    }
-  } else {
-    messages.value.push({
-      type: event.type || 'message',
-      data: event.data
-    });
-  }
+  // event.type: 由服务器发送的自定义事件类型（例如 FIN_TEXT、error、ping）
+  // event.data: 对应的数据
+  messages.value.push({
+    type: event.type || 'message',
+    data: event.data
+  })
 }
 
-const getSSE = () => {
-  if (!meetingId.value) {
-    ElMessage.error('会议 ID 不能为空')
-    return
-  }
-  if (eventSource) {
-    eventSource.close();
-  }
+// 建立 SSE 连接
+function initSSE() {
   const url = `https://8.133.201.233/api/video/public/stream/${meetingId.value}`
-  console.log('🔌 Connecting to SSE:', url)
-
-
+  console.log("进入initSSE")
   eventSource = new EventSource(url)
-  isListening.value = true;
-  messageType.value = 'info';
-  messages.value = [];
-  eventSource.onopen = () => {
-    console.log('✅ SSE 连接成功')
-    ElMessage.success('SSE 连接成功')
-    messageType.value = 'success';
+
+  eventSource.addEventListener('FIN_TEXT', parseSSE)
+  eventSource.addEventListener('error', parseSSE)
+  eventSource.addEventListener('ping', parseSSE)
+
+  eventSource.onmessage = (e) => {
+    parseSSE({ type: 'message', data: e.data })
   }
 
-  eventSource.addEventListener('mid_text', parseSSE);
-  eventSource.addEventListener('message', parseSSE);
-
-  eventSource.onerror = (err) => {
-    console.error('❌ SSE 连接错误', err)
-    ElMessage.error('SSE 连接失败或中断')
-    eventSource?.close()
+  eventSource.onerror = (e) => {
+    console.error('SSE 连接错误', e)
+    eventSource.close()
     eventSource = null
   }
 }
+
+
 
 
 // 开始监听
@@ -184,7 +199,7 @@ const startSession = async () => {
     message.value = '开始监听成功：' + JSON.stringify(response.data)
 
     messages.value = [] // 清空旧的消息
-    // initSSE() // 建立 SSE 连接
+    initSSE() // 建立 SSE 连接
   } catch (error) {
     message.value = '开始监听失败：' + (error.response?.data?.message || error.message)
   }
@@ -197,51 +212,23 @@ const stopSession = async () => {
     return
   }
 
-  // 先关闭前端的 SSE 连接
-  if (eventSource) {
-    console.log("Closing SSE connection from client-side.");
-    eventSource.close();
-    eventSource = null;
-  }
-  // isListening.value = false; // 立即更新状态
-  // messages.value = []; //可以选择不清空，以便查看历史
-
   try {
-    const response = await api.post(`/video/public/stop/${meetingId.value}`);
-    message.value = '结束监听请求成功'; // 更新消息
-    messageType.value = 'info';
-    console.log('Stop session response:', response.data);
+    const response = await api.post(`/video/public/stop/${meetingId.value}`)
+    message.value = '结束监听成功：' + JSON.stringify(response.data)
+
+    if (eventSource) {
+      eventSource.close()
+      eventSource = null
+    }
   } catch (error) {
-    console.error("结束监听失败:", error);
-    // 即使API调用失败，前端连接也已关闭
-    message.value = '结束监听请求失败：' + (error.response?.data?.message || error.message);
-    messageType.value = 'error';
+    message.value = '结束监听失败：' + (error.response?.data?.message || error.message)
   }
 }
-
-const summary = ref([]); // 改为数组以匹配可能的后端响应
-
-//获取summary
-const getSummary = async () => {
-
-  try {
-    const response = await api.get(`/video/public/summary/${meetingId.value}`);
-    console.log("完整响应:", response);
-    summary.value = response.data
-    console.log("获取摘要成功", summary.value)
-  } catch (error) {
-    console.log("获取失败", error.response?.data?.message || error.message)
-  }
-}
-
 
 // 组件卸载时关闭连接
 onBeforeUnmount(() => {
   if (eventSource) {
-    console.log("Component unmounting, closing SSE connection.");
-    eventSource.close();
-    eventSource = null;
-    // isListening.value = false;
+    eventSource.close()
   }
 })
 
@@ -280,8 +267,7 @@ const fetchSubscribedMeetings = async () => {
     isLoading.value = false;
   } catch (error) {
     console.error("获取订阅会议失败:", error);
-    ElMessage.info("订阅列表为空");
-    isLoading.value = false;
+    ElMessage.error("获取订阅会议失败");
   }
 };
 
@@ -319,7 +305,6 @@ onMounted(() => {
 
 <style scoped>
 /* 页面整体布局 */
-
 .home {
   display: flex;
   flex-direction: column;
@@ -418,7 +403,7 @@ onMounted(() => {
 .date-text {
   font-size: 16px;
   font-weight: bold;
-  color: #033958;
+  color: #333;
   margin-right: 10px;
 }
 
@@ -438,7 +423,7 @@ onMounted(() => {
 
 /* 会议卡片 */
 .meeting-card {
-  background: #f7fbfc;
+  background: #e9ecef;
   padding: 12px;
   border-radius: 8px;
   width: 200px;
@@ -472,16 +457,15 @@ onMounted(() => {
 }
 
 .meeting-name {
-  font-size: 15px;
-  font-weight: bold;
-  color: #033958;
+  font-size: 13px;
+  color: #444;
   margin: 6px 0;
 }
 
 
 
 .meeting-location {
-  font-size: 12px;
+  font-size: 13px;
   color: #555;
 }
 
@@ -507,7 +491,6 @@ onMounted(() => {
 .meeting-btn {
   flex: 1;
   /* 让按钮平均分配空间 */
-  background-color: #007bff;
   padding: 6px 10px;
   border: none;
   border-radius: 16px;
@@ -523,9 +506,7 @@ onMounted(() => {
 }
 
 .meeting-btn:not(.subscribed) {
-  border-color: #769fcd;
-  border-width: 1px;
-  background-color: #f7fbfc;
+  background-color: #cddad0;
   color: rgb(0, 0, 0);
 }
 
@@ -533,5 +514,11 @@ onMounted(() => {
 .cancel-btn {
   background-color: #dc3545;
   color: white;
+}
+
+/* 按钮点击时的效果 */
+.meeting-btn:active,
+.cancel-btn:active {
+  background-color: #444;
 }
 </style>

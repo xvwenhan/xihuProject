@@ -3,6 +3,7 @@ using UserService.DTOs;
 using Shared.Responses;
 using UserService.Services;
 using static UserService.DTOs.MeetingDTOs;
+using Shared.DTOs;
 
 namespace UserService.Services.Interfaces
 {
@@ -24,6 +25,27 @@ namespace UserService.Services.Interfaces
         /// </summary>
         /// <param name="request"></param>
         Task<ApiResponse<List<MeetingResponse>>> SortMeetingsAsync(SortRequest request,string userId);
+
+         /// <summary>
+        /// 获取会议地址
+        /// </summary>
+        Task<ApiResponse<List<MeetingLocationResponse>>> GetAllMeetingLocationsAsync();
+
+        /// <summary>
+        /// 获取某些会议的基本信息
+        /// </summary>
+        Task<ApiResponse<List<MeetingResponse>>> GetMeetingsByIdsAsync(RecommendResponse meetingIds, string userId);
+
+        /// <summary>
+        /// 获取会议列表（简洁版）
+        /// </summary>
+        /// <param name="request"></param>
+        Task<ApiResponse<List<EasyMeetingResponse>>> GetMeetingsAsync();
+
+        /// <summary>
+        /// 子系统间调用：获取某一会议的基本信息
+        /// </summary>
+        Task<ApiResponse<ConferenceDto?>> GetConferenceDetailsByIdAsync(int conferenceId);
 
     }
 }

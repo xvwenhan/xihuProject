@@ -28,21 +28,21 @@ public class AuthService : IAuthService
     private readonly UserDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
-    private readonly IDistributedCache _cache;
+    private readonly IDistributedCache _cache;     
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(UserDbContext context, IConfiguration configuration, IEmailService emailService,
         IDistributedCache cache,
         ILogger<AuthService> logger)
     {
-        _context = context;
+        _context = context; 
         _configuration = configuration;
         _emailService = emailService;
         _cache = cache;
         _logger = logger;
     }
 
-    public async Task<ApiResponse<object>> NewRegisterAsync(RegisterRequest request)
+    public async Task<ApiResponse<object>> NewRegisterAsync(UserDTOs request)
 {
     try
     {

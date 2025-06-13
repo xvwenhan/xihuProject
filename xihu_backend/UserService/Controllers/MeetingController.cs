@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shared.DTOs;
+using Shared.Responses;
 using UserService.DTOs;
 using UserService.Services;
 using UserService.Services.Interfaces;
@@ -51,6 +53,26 @@ namespace UserService.Controllers
         {
             var userId = Request.Headers["X-User-Id"].FirstOrDefault();
             var response = await _meetingService.SubscribeMeetingsAsync(userId);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
+        /// <summary>
+        /// 获取所有会议地点信息
+        /// </summary>
+        [Authorize]
+        [HttpGet("private/locations")]
+        public async Task<IActionResult> GetAllMeetingLocations()
+        {
+            var response = await _meetingService.GetAllMeetingLocationsAsync();
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
+
+        /// 子系统间调用接口：获取会议信息
+        /// </summary>
+        [HttpGet("public/conference/{conferenceId}")]
+        public async Task<ActionResult<ApiResponse<ConferenceDto?>>> GetConferenceDetails(int conferenceId)
+        {
+            var response = await _meetingService.GetConferenceDetailsByIdAsync(conferenceId);
             return response.Success ? Ok(response) : BadRequest(response);
         }
 

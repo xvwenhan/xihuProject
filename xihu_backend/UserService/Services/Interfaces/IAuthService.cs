@@ -9,20 +9,12 @@ namespace UserService.Services.Interfaces
     public interface IAuthService
     {
 
-        /// <summary>
-        /// 用户注册
-        /// </summary>
-        Task<ApiResponse<object>> RegisterAsync(InternalRegisterRequest request);
-        Task<ApiResponse<object>> NewRegisterAsync(RegisterRequest request);
 
-        /// <summary>
-        /// 用户登录
-        /// </summary>
+        Task<ApiResponse<object>> RegisterAsync(InternalRegisterRequest request);
+        Task<ApiResponse<object>> NewRegisterAsync(UserDTOs request);
+
         Task<ApiResponse<LoginResponse>> LoginAsync(LoginRequest request);
 
-        /// <summary>
-        /// 用户认证
-        /// </summary>
         Task<(bool success, string message)> ValidateUserAsync(string username, string password);
         Task<ApiResponse<bool>> SendVerificationCodeAsync(SendVerificationCodeRequest request);
         Task<ApiResponse<bool>> VerifyCodeAsync(VerifyCodeRequest request);

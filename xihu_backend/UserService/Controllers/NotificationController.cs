@@ -26,6 +26,17 @@ namespace UserService.Controllers
             await _notificationService.SendSseNotifications(userId, Response);
         }
 
+        ///// <summary>
+        ///// 添加浏览器订阅推送
+        ///// </summary>
+        //[Authorize]
+        //[HttpPost("private/subPush")]
+        //public async Task<IActionResult> SubPush([FromBody] SubPush request)
+        //{
+        //    var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        //    var response = await _notificationService.SubPushAsync(request, userId);
+        //    return response.Success ? Ok(response) : BadRequest(response);
+        //}
     }
    
 }

@@ -21,7 +21,7 @@ namespace UserService.Controllers
     {
         private readonly IAuthService _authService;
         private readonly NotificationService _notificationService;
-
+         
         public AuthController(IAuthService authService, NotificationService notificationService)
         {
             _authService = authService;
@@ -32,7 +32,7 @@ namespace UserService.Controllers
         /// 用户注册接口
         /// </summary>
         [HttpPost("public/register")]
-        public async Task<IActionResult> Register(RegisterRequest request)
+        public async Task<IActionResult> Register(UserDTOs request)
         {
             var response = await _authService.NewRegisterAsync(request);
             return response.Success ? Ok(response) : BadRequest(response);
@@ -68,10 +68,18 @@ namespace UserService.Controllers
            return response.Success ? Ok(response) : BadRequest(response);
        }
 
-
+        /// <summary>
+        /// 内部注册用API（无需验证码直接注册）
+        /// </summary>
+        [HttpPost("public/internal-register")]
+        public async Task<IActionResult> InternalRegister(InternalRegisterRequest request)
+        {
+            var response = await _authService.RegisterAsync(request);
+            return response.Success ? Ok(response) : BadRequest(response);
+        }
         /// <summary>
         /// 获取用户信息
-        /// </summary>
+        /// </summary> 
         [HttpGet("private/getUserInfo")]
         public async Task<IActionResult> GetUserInfo()
         {
@@ -87,7 +95,7 @@ namespace UserService.Controllers
         public async Task<IActionResult> SetUserInfo([FromBody] SetUserProfile request)
         {
             var userId = Request.Headers["X-User-Id"].FirstOrDefault();
-            var response = await _notificationService.SetUserInfo(request, userId);
+            var response = await _notificationService.SetUserInfo(request,userId);
             return response.Success ? Ok(response) : BadRequest(response);
         }
     }

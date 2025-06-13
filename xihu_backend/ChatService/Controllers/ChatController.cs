@@ -8,46 +8,66 @@ using ChatService.DTOs;
 [ApiController]
 public class ChatController : ControllerBase
 {
-    private readonly AgentService _agentService;
-    private readonly RedisQuestionService _redisQuestionService;
+    private readonly ChatService.Services.ChatWithAgentService _agentService;
 
-    public ChatController(AgentService agentService, RedisQuestionService redisQuestionService)
+    public ChatController(ChatService.Services.ChatWithAgentService agentService)
     {
-        _redisQuestionService = redisQuestionService;
         _agentService = agentService;
     }
 
-    //�������巢����Ϣ�յ��ظ��������¼�����ݿ�
+    /// <summary>
+    /// 与智能体对话
+    /// </summary>
     [Authorize]
-    [HttpPost("private/execute")]
-    public async Task<IActionResult> ExecuteAgentAsync([FromBody] ChatService.DTOs.InputRequest request)
+    [HttpPost("private/chat")]
+    public async Task<IActionResult> ChatWithAgent([FromBody] ChatService.DTOs.InputRequest request)
     {
         var userId = Request.Headers["X-User-Id"].FirstOrDefault();
-        var role = Request.Headers["X-User-Role"].FirstOrDefault();
-        var response = await _agentService.ExecuteAgentAsync(request, userId);
+        var response = await _agentService.ChatWithAgentAsync(request, userId);
         return response.Success ? Ok(response) : BadRequest(response);
 
     }
 
-    //�����û�id��ȡ�����¼
+    /// <summary>
+    /// 获取会话历史
+    /// </summary>
     [Authorize]
     [HttpGet("private/getChatLogs")]
-
-    public async Task<IActionResult> GetChatLogsAsync(int page, int pageSize)
+    public async Task<IActionResult> GetChatLogs(int page, int pageSize)
     {
         var userId = Request.Headers["X-User-Id"].FirstOrDefault();
-        var response = await _agentService.GetChatLogs(userId, page, pageSize);
+        var response = await _agentService.GetChatLogsAsync(userId, page, pageSize);
         return response.Success ? Ok(response) : BadRequest(response);
     }
 
+    /// <summary>
+    /// 向redis中缓存Q&A
+    /// </summary>
+    [HttpPost("public/redis")]
+    public async Task<IActionResult> StoreInRedis([FromBody] QARequest request)
+    {
+        var response = await _agentService.StoreInRedisAsync(request);
+        return response.Success ? Ok(response) : BadRequest(response);
+    }
 
+    /// <summary>
+    /// 从redis中语义匹配Q&A
+    /// </summary>
+    [HttpGet("public/redis")]
+    public async Task<IActionResult> FetchFromRedis([FromQuery] string question)
+    {
+        var response = await _agentService.FetchFromRedisAsync(question);
+        return response.Success ? Ok(response) : BadRequest(response);
+    }
 
+    /// <summary>
+    /// 获取猜你想问
+    /// </summary>
     [HttpGet("public/guessAsk")]
     public async Task<IActionResult> GuessWhatYouWantToAsk()
     {
-        var response = await _redisQuestionService.GetTopQuestionsAsync(5);
+        var response = await _agentService.GetTopQuestionsAsync(3);
         return response.Success ? Ok(response) : BadRequest(response);
-
     }
 
 }

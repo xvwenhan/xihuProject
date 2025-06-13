@@ -6,6 +6,8 @@ using Shared.Responses;
 using UserService.Services.Interfaces;
 using UserService.Controllers;
 using static UserService.DTOs.MeetingDTOs;
+using Org.BouncyCastle.Asn1.Ocsp;
+using Shared.DTOs;
 
 namespace UserService.Services
 {
@@ -177,7 +179,8 @@ namespace UserService.Services
                         Location = c.Location,
                         OfflineNum = c.OfflineNum,
                         Url = c.Url,
-                        IsSubscribed = subscribedConferenceIds.Contains(c.ConferenceId)
+                        IsSubscribed = subscribedConferenceIds.Contains(c.ConferenceId),
+                        SubscribeNum = c.SubscribeNum
                     })
                     .ToListAsync();
 
@@ -189,6 +192,144 @@ namespace UserService.Services
                 return ApiResponse.Fail<List<MeetingResponse>>($"会议排序失败: {ex.Message}");
             }
         }
+
+        public async Task<ApiResponse<List<MeetingResponse>>> GetMeetingsByIdsAsync(RecommendResponse recommends, string userId)
+        {
+            try
+            {
+                if (!int.TryParse(userId, out int parsedUserId))
+                {
+                    return ApiResponse.Fail<List<MeetingResponse>>("无效的用户ID", "400");
+                }
+                List<int> meetingIds = recommends.Recommendations;
+                if (meetingIds == null || meetingIds.Count == 0)
+                {
+                    // 前五热门会议
+                    meetingIds = await _context.Conferences
+                                .OrderByDescending(c => c.SubscribeNum)
+                                .Take(5)
+                                .Select(c => c.ConferenceId)
+                                .ToListAsync();
+                }
+
+                // 查询指定 ID 的会议
+                var query = _context.Conferences
+                    .Where(c => meetingIds.Contains(c.ConferenceId));
+
+                // 获取用户已订阅的会议 ID
+                var subscribedConferenceIds = await _context.Subscribes
+                    .Where(s => s.UserId == parsedUserId)
+                    .Select(s => s.ConferenceId)
+                    .ToListAsync();
+
+                // 查询并转换为 MeetingResponse
+                var meetings = await query
+                    .Select(c => new MeetingResponse
+                    {
+                        Id = c.ConferenceId,
+                        Name = c.ConferenceName,
+                        Time = c.Date.ToString() + " " + c.StartTime.ToString(),
+                        Type = c.Type,
+                        IsOnlyOffline = c.IsOnlyOffline == "是",
+                        Location = c.Location,
+                        OfflineNum = c.OfflineNum,
+                        Url = c.Url,
+                        IsSubscribed = subscribedConferenceIds.Contains(c.ConferenceId),
+                        SubscribeNum = c.SubscribeNum
+                    })
+                    .ToListAsync();
+
+                return ApiResponse.Success(meetings, "查询成功");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "根据会议ID列表查询会议信息失败");
+                return ApiResponse.Fail<List<MeetingResponse>>($"查询失败: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<List<MeetingLocationResponse>>> GetAllMeetingLocationsAsync()
+        {
+    try
+    {
+        // 查询所有会议地点
+        var locations = await _context.MeetingLocations
+            .OrderBy(l => l.Name)  // 按名称排序
+            .Select(l => new MeetingLocationResponse
+            {
+                Id = l.Id,
+                Name = l.Name,
+                Latitude = l.Latitude,
+                Longitude = l.Longitude,
+                RouteFromAirport1 = l.RouteFromAirport1,
+                RouteFromAirport2 = l.RouteFromAirport2
+            })
+            .ToListAsync();
+
+        if (locations == null || !locations.Any())
+        {
+            return ApiResponse.Fail<List<MeetingLocationResponse>>("没有找到会议地点信息", "NO_LOCATIONS");
+        }
+
+        return ApiResponse.Success(locations, "获取会议地点列表成功");
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "获取会议地点失败");
+        return ApiResponse.Fail<List<MeetingLocationResponse>>($"获取会议地点失败: {ex.Message}");
+    }
+}
+
+        public async Task<ApiResponse<List<EasyMeetingResponse>>> GetMeetingsAsync()
+        {
+            try
+            {
+                // 查询会议信息（不排序）
+                var query = _context.Conferences.AsQueryable();
+
+                // 执行查询并仅返回会议 ID 和名称
+                var meetings = await query
+                    .Select(c => new EasyMeetingResponse
+                    {
+                        Id = c.ConferenceId,
+                        Name = c.ConferenceName
+                    })
+                    .ToListAsync();
+
+                return ApiResponse.Success(meetings, "查询成功");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取会议信息失败");
+                return ApiResponse.Fail<List<EasyMeetingResponse>>($"获取会议信息失败: {ex.Message}");
+            }
+
+
+        }
+
+        public async Task<ApiResponse<ConferenceDto?>> GetConferenceDetailsByIdAsync(int conferenceId)
+        {
+            var conference = await _context.Conferences
+                .Where(c => c.ConferenceId == conferenceId)
+                .FirstOrDefaultAsync();
+
+            if (conference == null)
+            {
+                return ApiResponse.Fail<ConferenceDto?>(null,"会议ID不存在或未找到相关会议");
+            }
+
+            var conferenceDto = new ConferenceDto
+            {
+                ConferenceId = conference.ConferenceId,
+                ConferenceName = conference.ConferenceName,
+                StartTime = conference.StartTime,
+                EndTime = conference.EndTime,
+                IsOnlyOffline = conference.IsOnlyOffline,
+            };
+
+            return ApiResponse.Success(conferenceDto, "成功获取会议详情");
+        }
+
 
     }
 }

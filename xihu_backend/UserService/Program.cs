@@ -24,13 +24,11 @@ builder.Services.AddDbContext<UserDbContext>(options =>
     ));
 
 
-
-
 // 添加 Redis 缓存
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "UserService_";
+    options.InstanceName = "";
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -53,10 +51,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IVerificationCodeService, VerificationCodeService>();
 builder.Services.AddScoped<IMeetingService, MeetingService>();
-builder.Services.AddScoped<IAgentService, AgentService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<IWeChatAuthService, WeChatAuthService>();
 builder.Services.AddAutoMapper(typeof(Program));
@@ -81,23 +76,6 @@ app.UseCors(builder =>
     builder.WithOrigins("http://localhost:5173")
            .AllowAnyMethod()
            .AllowAnyHeader());*/
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-
-
-// 使用跨域策略
-app.UseCors(builder =>
-    builder.WithOrigins("http://localhost:5173")
-           .AllowAnyMethod()
-           .AllowAnyHeader());
 
 
 app.UseAuthentication();
